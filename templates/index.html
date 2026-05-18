@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Heart Failure Mortality Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+    <main class="container">
+        <header class="header">
+            <h1>Heart Failure Mortality Predictor</h1>
+            <p>Enter patient details to estimate mortality risk based on your project dataset.</p>
+        </header>
+
+        {% if error %}
+            <div class="alert error">{{ error }}</div>
+        {% endif %}
+
+        {% if prediction %}
+            <section class="result {{ 'high' if prediction == 'High Mortality Risk' else 'low' }}">
+                <h2>Prediction: {{ prediction }}</h2>
+                <p>Estimated probability of death event: <strong>{{ probability }}%</strong></p>
+            </section>
+        {% endif %}
+
+        <form method="post" class="prediction-form">
+            <div class="grid">
+                {% for field in fields %}
+                    <div class="form-group">
+                        <label for="{{ field.name }}">{{ field.label }}</label>
+                        <input
+                            id="{{ field.name }}"
+                            name="{{ field.name }}"
+                            type="number"
+                            step="{{ field.step }}"
+                            min="{{ field.min }}"
+                            {% if field.max is not none %}max="{{ field.max }}"{% endif %}
+                            value="{{ form_values[field.name] }}"
+                            required
+                        />
+                        <small>{{ field.help }}</small>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit">Predict Risk</button>
+        </form>
+
+        <section class="legend">
+            <h3>Binary Field Guide</h3>
+            <ul>
+                <li>Anaemia / Diabetes / High Blood Pressure / Smoking: <strong>0 = No, 1 = Yes</strong></li>
+                <li>Sex: <strong>0 = Female, 1 = Male</strong></li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>
