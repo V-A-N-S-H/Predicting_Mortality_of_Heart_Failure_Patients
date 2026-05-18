@@ -1,6 +1,6 @@
 <div align="center">
 
-# ❤️ Heart Failure Prediction System
+# Heart Failure Prediction System
 
 ### ML & Deep Learning Based Mortality Risk Prediction
 
