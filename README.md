@@ -1,95 +1,115 @@
-<div align="center">
+# Predicting Mortality of Heart Failure Patients
 
-# Heart Failure Prediction System
+A Machine Learning project that predicts the mortality risk of heart failure patients using clinical and health-related data.
 
-### ML & Deep Learning Based Mortality Risk Prediction
+This project uses Machine Learning models like Support Vector Machine (SVM) and Artificial Neural Network (ANN) to predict whether a patient is at high risk or lower risk of mortality.
 
-</div>
+The project also includes a Flask web application for real-time prediction.
 
 ---
 
-## 📌 Overview
+# Technologies Used
 
-A Flask-based Machine Learning web application that predicts heart failure mortality risk using clinical records data.
+- Python
+- Flask
+- Pandas
+- NumPy
+- Scikit-learn
+- TensorFlow
+- HTML
+- CSS
+- JavaScript
 
-The project uses:
+---
+
+# Project Structure
+
+```text
+Predicting_Mortality_of_Heart_Failure_Patients/
+│
+├── static/
+├── templates/
+│
+├── heart_failure_clinical_records_dataset.csv
+│
+├── app.py
+├── main.py
+├── main.ipynb
+│
+├── requirements.txt
+├── .gitignore
+│
+└── README.md
+```
+
+---
+
+# Features
+
+- Heart failure mortality prediction
+- SVM and ANN models
+- Data preprocessing and scaling
+- Flask web application
+- Real-time prediction
+- Probability score prediction
+
+---
+
+# Input Features
+
+- Age
+- Anaemia
+- Diabetes
+- Ejection Fraction
+- High Blood Pressure
+- Platelets
+- Serum Creatinine
+- Serum Sodium
+- Smoking
+- Follow-up Time
+
+---
+
+# Installation
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/V-A-N-S-H/Predicting_Mortality_of_Heart_Failure_Patients.git
+cd Predicting_Mortality_of_Heart_Failure_Patients
+```
+
+---
+
+## Install Requirements
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+# Run The Project
+
+```bash
+python app.py
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5000
+```
+
+---
+
+# Models Used
 
 - Support Vector Machine (SVM)
 - Artificial Neural Network (ANN)
 
 ---
 
-## 🚀 Features
+# Dataset
 
-- Heart failure risk prediction
-- Flask web application
-- SVM & ANN models
-- TensorFlow/Keras integration
-- User-friendly interface
-- Probability-based prediction
-
----
-
-## 🛠️ Tech Stack
-
-- Python 3.11
-- Flask
-- NumPy
-- Pandas
-- Scikit-learn
-- TensorFlow / Keras
-- Matplotlib
-- Seaborn
-
----
-
-## 📂 Project Structure
-
-```bash
-Heart-Failure-Prediction/
-│
-├── app.py
-├── main.py
-├── requirements.txt
-├── README.md
-├── heart_failure_clinical_records_dataset.csv
-```
-
----
-
-## ⚙️ Installation
-
-```bash
-conda create -n tensorflow_env python=3.11 -y
-conda activate tensorflow_env
-
-pip install -r requirements.txt
-```
-
----
-
-## ▶️ Run Project
-
-```bash
-python app.py
-```
-
-Open in browser:
-
-```bash
-http://127.0.0.1:5000
-```
-
----
-
-## 👨‍💻 Author
-
-### Vansh Kashyap
-
-Data Science & Machine Learning Enthusiast
-
----
-
-## ⭐ Support
-
-If you like this project, give it a ⭐ on GitHub!
+- Heart Failure Clinical Records Dataset
