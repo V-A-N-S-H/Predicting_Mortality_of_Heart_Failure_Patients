@@ -104,7 +104,20 @@ def index():
     prediction = None
     probability = None
     error = None
-    form_values = {field["name"]: "" for field in FIELD_CONFIG}
+    form_values = {
+        "age": "60",
+        "anaemia": "0",
+        "creatinine_phosphokinase": "250",
+        "diabetes": "0",
+        "ejection_fraction": "38",
+        "high_blood_pressure": "0",
+        "platelets": "263000",
+        "serum_creatinine": "1.1",
+        "serum_sodium": "137",
+        "sex": "1",
+        "smoking": "0",
+        "time": "130",
+    }
 
     if request.method == "POST":
         try:
@@ -149,6 +162,53 @@ def index():
         probability=probability,
         error=error,
     )
+
+@app.route("/api/dashboard-data")
+def dashboard_data():
+    df = pd.read_csv(DATA_PATH)
+    
+    # 1. Age Distribution (bins)
+    age_bins = pd.cut(df['age'], bins=[0, 40, 50, 60, 70, 80, 100], labels=['<40', '40-50', '50-60', '60-70', '70-80', '80+'])
+    age_dist = df.groupby(age_bins, observed=False)['DEATH_EVENT'].value_counts().unstack().fillna(0)
+    age_dist_data = {
+        "labels": age_dist.index.tolist(),
+        "survived": age_dist[0].tolist(),
+        "died": age_dist[1].tolist()
+    }
+    
+    # 2. Gender and Mortality
+    sex_dist = df.groupby('sex')['DEATH_EVENT'].value_counts().unstack().fillna(0)
+    sex_dist_data = {
+        "labels": ["Female", "Male"],
+        "survived": [int(sex_dist.loc[0, 0]), int(sex_dist.loc[1, 0])],
+        "died": [int(sex_dist.loc[0, 1]), int(sex_dist.loc[1, 1])]
+    }
+    
+    # 3. Ejection Fraction vs Serum Creatinine (Scatter)
+    scatter_survived = df[df['DEATH_EVENT'] == 0][['ejection_fraction', 'serum_creatinine']].to_dict(orient='records')
+    scatter_died = df[df['DEATH_EVENT'] == 1][['ejection_fraction', 'serum_creatinine']].to_dict(orient='records')
+    scatter_data = {
+        "survived": scatter_survived,
+        "died": scatter_died
+    }
+    
+    # 4. Binary Features Pie Chart (overall prevalence)
+    binary_features = ['anaemia', 'diabetes', 'high_blood_pressure', 'smoking']
+    binary_prevalence = [int(df[feat].sum()) for feat in binary_features]
+    binary_data = {
+        "labels": ["Anaemia", "Diabetes", "High Blood Pressure", "Smoking"],
+        "data": binary_prevalence
+    }
+
+    return {
+        "ageDistribution": age_dist_data,
+        "sexDistribution": sex_dist_data,
+        "ejectionVsCreatinine": scatter_data,
+        "binaryPrevalence": binary_data,
+        "totalRecords": len(df),
+        "mortalityRate": round((df['DEATH_EVENT'].sum() / len(df)) * 100, 1)
+    }
+
 
 
 

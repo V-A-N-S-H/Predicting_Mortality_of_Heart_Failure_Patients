@@ -4,56 +4,224 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Heart Failure Mortality Predictor</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
-    <main class="container">
-        <header class="header">
-            <h1>Heart Failure Mortality Predictor</h1>
-            <p>Enter patient details to estimate mortality risk based on your project dataset.</p>
+    <div class="dashboard-container">
+        <header>
+            <h1>Heart Failure Analytics Dashboard</h1>
+            <p>Predictive modeling and dataset insights powered by SVM</p>
         </header>
 
-        {% if error %}
-            <div class="alert error">{{ error }}</div>
-        {% endif %}
-
-        {% if prediction %}
-            <section class="result {{ 'high' if prediction == 'High Mortality Risk' else 'low' }}">
-                <h2>Prediction: {{ prediction }}</h2>
-                <p>Estimated probability of death event: <strong>{{ probability }}%</strong></p>
-            </section>
-        {% endif %}
-
-        <form method="post" class="prediction-form">
-            <div class="grid">
-                {% for field in fields %}
-                    <div class="form-group">
-                        <label for="{{ field.name }}">{{ field.label }}</label>
-                        <input
-                            id="{{ field.name }}"
-                            name="{{ field.name }}"
-                            type="number"
-                            step="{{ field.step }}"
-                            min="{{ field.min }}"
-                            {% if field.max is not none %}max="{{ field.max }}"{% endif %}
-                            value="{{ form_values[field.name] }}"
-                            required
-                        />
-                        <small>{{ field.help }}</small>
-                    </div>
-                {% endfor %}
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="glass-card stat-box">
+                <h3>Total Patients</h3>
+                <div class="value" id="total-patients">-</div>
             </div>
+            <div class="glass-card stat-box">
+                <h3>Mortality Rate</h3>
+                <div class="value" id="mortality-rate">-</div>
+            </div>
+            <div class="glass-card stat-box">
+                <h3>High Risk Cases</h3>
+                <div class="value" style="color: var(--danger-color);" id="high-risk-cases">-</div>
+            </div>
+        </div>
 
-            <button type="submit">Predict Risk</button>
-        </form>
+        <!-- Charts Dashboard -->
+        <div class="glass-card" style="margin-bottom: 2rem;">
+            <h2>Dataset Insights</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <canvas id="ageDistributionChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="binaryFeaturesChart"></canvas>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-container" style="width: 100%;">
+                    <canvas id="scatterChart"></canvas>
+                </div>
+            </div>
+        </div>
 
-        <section class="legend">
-            <h3>Binary Field Guide</h3>
-            <ul>
-                <li>Anaemia / Diabetes / High Blood Pressure / Smoking: <strong>0 = No, 1 = Yes</strong></li>
-                <li>Sex: <strong>0 = Female, 1 = Male</strong></li>
-            </ul>
-        </section>
-    </main>
+        <!-- Prediction Tool -->
+        <div class="glass-card">
+            <h2>Patient Mortality Risk Prediction</h2>
+            <p style="color: var(--muted-color); margin-bottom: 1.5rem;">Enter patient metrics below to predict the probability of a death event using the SVM classifier.</p>
+            
+            {% if error %}
+                <div class="alert">{{ error }}</div>
+            {% endif %}
+
+            <div class="prediction-section">
+                <form method="post" class="prediction-form">
+                    <div class="form-grid">
+                        {% for field in fields %}
+                            <div class="form-group">
+                                <label for="{{ field.name }}">{{ field.label }}</label>
+                                <input
+                                    id="{{ field.name }}"
+                                    name="{{ field.name }}"
+                                    type="number"
+                                    step="{{ field.step }}"
+                                    min="{{ field.min }}"
+                                    {% if field.max is not none %}max="{{ field.max }}"{% endif %}
+                                    value="{{ form_values[field.name] }}"
+                                    required
+                                />
+                                <small>{{ field.help }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit">Predict Risk</button>
+                </form>
+
+                <div class="result-panel">
+                    {% if prediction %}
+                        <div class="glass-card result-card result {{ 'result-high' if prediction == 'High Mortality Risk' else 'result-low' }}">
+                            <h2>{{ prediction }}</h2>
+                            <div class="probability-circle">
+                                {{ probability }}%
+                            </div>
+                            <p>Estimated probability of death event</p>
+                        </div>
+                    {% else %}
+                        <div class="glass-card result-card" style="border: 1px dashed var(--card-border);">
+                            <p style="color: var(--muted-color);">Awaiting patient data...</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set Chart.js defaults for dark theme
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        async function fetchDashboardData() {
+            try {
+                const res = await fetch('/api/dashboard-data');
+                const data = await res.json();
+
+                // Update Stats
+                document.getElementById('total-patients').textContent = data.totalRecords;
+                document.getElementById('mortality-rate').textContent = data.mortalityRate + '%';
+                
+                // We estimate "High risk cases" as total died in dataset
+                const totalDied = data.sexDistribution.died.reduce((a, b) => a + b, 0);
+                document.getElementById('high-risk-cases').textContent = totalDied;
+
+                // 1. Age Distribution Chart
+                const ctxAge = document.getElementById('ageDistributionChart').getContext('2d');
+                new Chart(ctxAge, {
+                    type: 'bar',
+                    data: {
+                        labels: data.ageDistribution.labels,
+                        datasets: [
+                            {
+                                label: 'Survived',
+                                data: data.ageDistribution.survived,
+                                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Died',
+                                data: data.ageDistribution.died,
+                                backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: true, text: 'Age Distribution by Mortality', color: '#f8fafc' }
+                        },
+                        scales: {
+                            x: { stacked: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            y: { stacked: true, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+
+                // 2. Binary Features Prevelance
+                const ctxBinary = document.getElementById('binaryFeaturesChart').getContext('2d');
+                new Chart(ctxBinary, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.binaryPrevalence.labels,
+                        datasets: [{
+                            data: data.binaryPrevalence.data,
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.8)',
+                                'rgba(139, 92, 246, 0.8)',
+                                'rgba(245, 158, 11, 0.8)',
+                                'rgba(236, 72, 153, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: true, text: 'Prevalence of Conditions', color: '#f8fafc' },
+                            legend: { position: 'right' }
+                        }
+                    }
+                });
+
+                // 3. Scatter Chart (Ejection vs Creatinine)
+                const ctxScatter = document.getElementById('scatterChart').getContext('2d');
+                new Chart(ctxScatter, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [
+                            {
+                                label: 'Survived',
+                                data: data.ejectionVsCreatinine.survived.map(d => ({x: d.ejection_fraction, y: d.serum_creatinine})),
+                                backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                                borderColor: 'rgba(16, 185, 129, 1)',
+                            },
+                            {
+                                label: 'Died',
+                                data: data.ejectionVsCreatinine.died.map(d => ({x: d.ejection_fraction, y: d.serum_creatinine})),
+                                backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                                borderColor: 'rgba(239, 68, 68, 1)',
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: true, text: 'Ejection Fraction vs Serum Creatinine', color: '#f8fafc' }
+                        },
+                        scales: {
+                            x: { title: { display: true, text: 'Ejection Fraction (%)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            y: { title: { display: true, text: 'Serum Creatinine (mg/dL)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+
+            } catch (err) {
+                console.error("Error fetching dashboard data:", err);
+            }
+        }
+
+        window.onload = fetchDashboardData;
+    </script>
 </body>
 </html>
